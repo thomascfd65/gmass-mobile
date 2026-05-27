@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>GMass Mobile</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --border: #e2e0d8;
+    --text: #1a1a18;
+    --muted: #7a7a72;
+    --accent: #1a1a18;
+    --accent-fg: #ffffff;
+    --success-bg: #eaf3de;
+    --success-fg: #3b6d11;
+    --warn-bg: #faeeda;
+    --warn-fg: #854f0b;
+    --info-bg: #e6f1fb;
+    --info-fg: #185fa5;
+    --danger-bg: #fcebeb;
+    --danger-fg: #a32d2d;
+    --radius: 12px;
+    --radius-sm: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* --- SCREENS --- */
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.active { display: flex; }
+
+  /* --- TOPBAR --- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-title { font-size: 16px; font-weight: 600; flex: 1; }
+  .icon-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s;
+  }
+  .icon-btn:hover { background: var(--bg); }
+
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 15px; height: 15px; fill: var(--accent-fg); }
+
+  /* --- CONTENT --- */
+  .content {
+    flex: 1;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow-y: auto;
+  }
+
+  /* --- FORM --- */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+  input[type="text"],
+  input[type="password"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    background: var(--surface);
+    color: var(--text);
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+  textarea { resize: none; min-height: 100px; line-height: 1.5; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7a72' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+  /* --- BUTTONS --- */
+  .btn {
+    padding: 13px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.15s, transform 0.1s;
+    font-family: inherit;
+    width: 100%;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: var(--accent-fg); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+
+  /* --- PILL --- */
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 99px;
+    white-space: nowrap;
+  }
+  .pill-success { background: var(--success-bg); color: var(--success-fg); }
+  .pill-warn    { background: var(--warn-bg);    color: var(--warn-fg); }
+  .pill-info    { background: var(--info-bg);    color: var(--info-fg); }
+  .pill-gray    { background: var(--bg);         color: var(--muted); border: 1px solid var(--border); }
+
+  /* --- TABS --- */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 18px; background: var(--surface); }
+  .tab {
+    flex: 1;
+    padding: 13px 4px;
+    font-size: 14px;
+    font-weight: 500;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: inherit;
+    transition: color 0.15s;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+  /* --- SCHEDULE TOGGLE --- */
+  .seg { display: flex; background: var(--bg); border-radius: var(--radius-sm); padding: 3px; gap: 3px; }
+  .seg-btn {
+    flex: 1;
+    padding: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .seg-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sched-panel { display: none; margin-top: 4px; }
+  .sched-panel.show { display: block; }
+
+  /* --- ALERT --- */
+  .alert {
+    padding: 11px 13px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    line-height: 1.4;
+    display: none;
+  }
+  .alert.show { display: block; }
+  .alert-danger { background: var(--danger-bg); color: var(--danger-fg); }
+  .alert-success { background: var(--success-bg); color: var(--success-fg); }
+
+  /* --- KEY SCREEN --- */
+  .key-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 24px;
+    gap: 20px;
+    text-align: center;
+  }
+  .key-icon-wrap {
+    width: 64px; height: 64px;
+    border-radius: 18px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+  }
+  .key-body h2 { font-size: 20px; font-weight: 700; }
+  .key-body p { font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 300px; }
+  .key-form { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+
+  /* --- CAMPAIGN LIST --- */
+  .camp-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .camp-item:last-child { border-bottom: none; }
+  .camp-subject { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+  .camp-meta { font-size: 12px; color: var(--muted); }
+
+  /* --- DETAIL --- */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card {
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); }
+  .stat-val { font-size: 22px; font-weight: 700; }
+
+  /* --- SUCCESS --- */
+  .success-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    gap: 14px;
+    text-align: center;
+  }
+  .success-check {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: var(--success-bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px;
+  }
+  .success-body h2 { font-size: 22px; font-weight: 700; }
+  .success-body p { font-size: 14px; color: var(--muted); }
+  .success-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 280px; margin-top: 8px; }
+
+  /* --- EMPTY --- */
+  .empty { text-align: center; padding: 48px 16px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+  /* --- SPINNER --- */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  .spinner-dark {
+    border-color: rgba(0,0,0,0.15);
+    border-top-color: var(--text);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .divider { height: 1px; background: var(--border); }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── KEY SCREEN ── -->
+  <div id="s-key" class="screen active">
+    <div class="topbar">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm3.519 0L12 11.671 18.481 6H5.52zM20 7.329l-7.341 5.925a1 1 0 01-1.318 0L4 7.329V18h16V7.329z"/></svg>
+      </div>
+      <span class="topbar-title">GMass Mobile</span>
+    </div>
+    <div class="key-body">
+      <div class="key-icon-wrap">🔑</div>
+      <div>
+        <h2>Connect your account</h2>
+        <p style="margin-top:8px">Paste your GMass API key to get started. Find it in your <a href="https://gmass.co/dashboard" target="_blank" style="color:var(--info-fg)">GMass dashboard</a> under Settings → API Keys.</p>
+      </div>
+      <div class="key-form">
+        <input type="password" id="api-key-input" placeholder="Paste API key here" autocomplete="off" />
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;font-weight:400">
+          <input type="checkbox" id="remember-key" style="width:auto;margin:0" />
+          Remember on this device
+        </label>
+        <div class="alert alert-danger" id="key-err">Could not connect — check your API key and try again.</div>
+        <button class="btn btn-primary" id="connect-btn" onclick="connectKey()">Connect account</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted)">Key is only ever sent to GMass — never stored on any server.</p>
+      <div style="width:100%;display:flex;align-items:center;gap:10px;margin-top:4px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:12px;color:var(--muted)">optional</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <button class="btn btn-ghost" id="google-signin-btn" onclick="signInGoogle()" style="display:flex;align-items:center;gap:8px;width:100%">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-3.59-13.46-8.69l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Connect Google account
+      </button>
+      <p id="google-status" style="font-size:12px;color:var(--success-fg);display:none;text-align:center"></p>
+    </div>
+  </div>
+
+  <!-- ── HOME SCREEN ── -->
+  <div id="s-home" class="screen">
+    <div class="topbar">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm3.519 0L12 11.671 18.481 6H5.52zM20 7.329l-7.341 5.925a1 1 0 01-1.318 0L4 7.329V18h16V7.329z"/></svg>
+      </div>
+      <span class="topbar-title">GMass Mobile</span>
+      <button class="icon-btn" onclick="logout()" title="Disconnect" aria-label="Disconnect account">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab-new" onclick="switchTab('new')">New campaign</button>
+      <button class="tab" id="tab-recent" onclick="switchTab('recent')">Recent</button>
+    </div>
+
+    <!-- NEW CAMPAIGN -->
+    <div id="pane-new" class="content">
+      <div class="field">
+        <label for="subject">Subject line</label>
+        <input type="text" id="subject" placeholder="Your email subject…" />
+      </div>
+      <div class="field" id="draft-field" style="display:none">
+        <label for="draft-sel" style="display:flex;justify-content:space-between;align-items:center">
+          Gmail draft
+          <button onclick="loadDrafts()" style="background:none;border:none;font-size:12px;color:var(--info-fg);cursor:pointer;font-family:inherit;padding:0">Refresh</button>
+        </label>
+        <select id="draft-sel" onchange="onDraftChange()">
+          <option value="">Select a draft…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="body" style="display:flex;justify-content:space-between;align-items:center">
+          Email body
+          <span style="font-size:11px;color:var(--muted);font-weight:400">HTML supported</span>
+        </label>
+        <textarea id="body" placeholder="Write your message here, or select a Gmail draft above. HTML tags supported."></textarea>
+      </div>
+      <div class="field">
+        <label for="sheet-sel">Recipient list — Google Sheet</label>
+        <select id="sheet-sel" onchange="onSheetChange()">
+          <option value="">Loading sheets…</option>
+        </select>
+      </div>
+      <div class="field" id="ws-field" style="display:none">
+        <label for="ws-sel" style="display:flex;justify-content:space-between;align-items:center">
+          Worksheet
+          <span id="contact-count" style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--border);display:none"></span>
+        </label>
+        <select id="ws-sel" onchange="onWorksheetChange()">
+          <option value="">Select worksheet…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>When to send</label>
+        <div class="seg">
+          <button class="seg-btn active" id="seg-now" onclick="setSched('now')">Send now</button>
+          <button class="seg-btn" id="seg-later" onclick="setSched('later')">Schedule</button>
+        </div>
+        <div class="sched-panel" id="sched-panel">
+          <div class="row2" style="margin-top:10px">
+            <div class="field">
+              <label for="sched-date">Date</label>
+              <input type="date" id="sched-date" />
+            </div>
+            <div class="field">
+              <label for="sched-time">Time</label>
+              <select id="sched-time">
+              <option value="00:00">00:00</option>
+              <option value="01:00">01:00</option>
+              <option value="02:00">02:00</option>
+              <option value="03:00">03:00</option>
+              <option value="04:00">04:00</option>
+              <option value="05:00">05:00</option>
+              <option value="06:00">06:00</option>
+              <option value="07:00">07:00</option>
+              <option value="08:00">08:00</option>
+              <option value="09:00" selected>09:00</option>
+              <option value="10:00">10:00</option>
+              <option value="11:00">11:00</option>
+              <option value="12:00">12:00</option>
+              <option value="13:00">13:00</option>
+              <option value="14:00">14:00</option>
+              <option value="15:00">15:00</option>
+              <option value="16:00">16:00</option>
+              <option value="17:00">17:00</option>
+              <option value="18:00">18:00</option>
+              <option value="19:00">19:00</option>
+              <option value="20:00">20:00</option>
+              <option value="21:00">21:00</option>
+              <option value="22:00">22:00</option>
+              <option value="23:00">23:00</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-danger" id="send-err"></div>
+      <button class="btn btn-primary" id="send-btn" onclick="sendCampaign()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.52 60.52 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/></svg>
+        Send campaign
+      </button>
+    </div>
+
+    <!-- RECENT CAMPAIGNS -->
+    <div id="pane-recent" class="content" style="display:none">
+      <div id="camp-list">
+        <div class="empty"><div class="empty-icon">📭</div>Loading campaigns…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DETAIL SCREEN ── -->
+  <div id="s-detail" class="screen">
+    <div class="topbar">
+      <button class="icon-btn" onclick="show('home')" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="topbar-title" id="detail-title">Campaign</span>
+      <span class="pill" id="detail-pill" style="margin-left:auto"></span>
+    </div>
+    <div class="content" id="detail-content"></div>
+  </div>
+
+  <!-- ── SUCCESS SCREEN ── -->
+  <div id="s-success" class="screen">
+    <div class="topbar">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm3.519 0L12 11.671 18.481 6H5.52zM20 7.329l-7.341 5.925a1 1 0 01-1.318 0L4 7.329V18h16V7.329z"/></svg>
+      </div>
+      <span class="topbar-title">GMass Mobile</span>
+    </div>
+    <div class="success-body">
+      <div class="success-check">✅</div>
+      <h2 id="success-title">Campaign sent!</h2>
+      <p id="success-sub">Your emails are on their way.</p>
+      <div class="success-actions">
+        <button class="btn btn-primary" onclick="goHome()">New campaign</button>
+        <button class="btn btn-ghost" onclick="goRecent()">View recent</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// After deploying gmass-proxy-worker.js to Cloudflare Workers,
+// replace PROXY_URL_HERE with your worker URL, e.g.:
+// const BASE = 'https://gmass-proxy.yourname.workers.dev/api';
+const BASE = 'https://gmass-mobile.tomtommy99-tc.workers.dev/api';
+let apiKey = '';
+let schedMode = 'now';
+let sheets = [];
+let rawWorksheets = [];
+let googleToken = null;
+let rawDrafts = [];
+const GOOGLE_CLIENT_ID = '839364167319-hhmmg44p0dc6n8bs83jhb3mfa6e9a74v.apps.googleusercontent.com';
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+async function api(path, method = 'GET', body = null) {
+  const url = BASE + path;
+  const opts = { method, headers: { 'X-apikey': apiKey } };
+
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+
+  const r = await fetch(url, opts);
+  if (!r.ok) {
+    const errText = await r.text().catch(() => '(no body)');
+    throw new Error('HTTP ' + r.status + ': ' + errText.slice(0, 200));
+  }
+  return r.json();
+}
+
+async function connectKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) return;
+  const err = document.getElementById('key-err');
+  const btn = document.getElementById('connect-btn');
+  err.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Connecting…';
+  apiKey = key;
+  try {
+    const data = await api('/sheets');
+    const rawSheets = Array.isArray(data) ? data : (data.sheets || data.Sheets || data.value || (typeof data === 'object' ? Object.values(data)[0] : []) || []);
+    sheets = (Array.isArray(rawSheets) ? rawSheets : []).map(s => {
+      const allVals = Object.entries(s);
+      const idEntry = allVals.find(([k]) => k.toLowerCase().includes('id'));
+      const titleEntry = allVals.find(([k,v]) => typeof v === 'string' && !k.toLowerCase().includes('id'));
+      return {
+        spreadsheetId: s.spreadsheetId || s.SpreadsheetId || s.id || s.Id || (idEntry ? idEntry[1] : ''),
+        title: s.spreadsheetName || s.SpreadsheetName || s.spreadsheetTitle || s.SpreadsheetTitle || s.title || s.Title || s.name || s.Name || (titleEntry ? titleEntry[1] : null) || 'Sheet …' + (s.spreadsheetId || s.id || '').slice(-6)
+      };
+    });
+    if (document.getElementById('remember-key').checked) {
+      localStorage.setItem('gmass_api_key', k);
+    } else {
+      localStorage.removeItem('gmass_api_key');
+    }
+    show('home');
+    populateSheets();
+    loadCampaigns();
+  } catch (e) {
+    apiKey = '';
+    err.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Connect account';
+  }
+}
+
+function logout() {
+  apiKey = '';
+  sheets = [];
+  localStorage.removeItem('gmass_api_key');
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('remember-key').checked = false;
+  show('key');
+}
+
+function switchTab(t) {
+  document.getElementById('tab-new').classList.toggle('active', t === 'new');
+  document.getElementById('tab-recent').classList.toggle('active', t === 'recent');
+  document.getElementById('pane-new').style.display = t === 'new' ? 'flex' : 'none';
+  document.getElementById('pane-recent').style.display = t === 'recent' ? 'flex' : 'none';
+}
+
+function populateSheets() {
+  const sel = document.getElementById('sheet-sel');
+  if (!sheets.length) {
+    sel.innerHTML = '<option value="">No Google Sheets found</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Choose a Google Sheet…</option>' +
+    sheets.map(s => `<option value="${s.spreadsheetId}">${s.title}</option>`).join('');
+}
+
+async function onSheetChange() {
+  const sheetId = document.getElementById('sheet-sel').value;
+  const wsField = document.getElementById('ws-field');
+  const wsSel = document.getElementById('ws-sel');
+  const countBadge = document.getElementById('contact-count');
+  countBadge.style.display = 'none';
+  if (!sheetId) { wsField.style.display = 'none'; return; }
+  wsField.style.display = 'flex';
+  wsSel.innerHTML = '<option value="">Loading…</option>';
+  try {
+    const data = await api('/sheets/' + sheetId + '/worksheets');
+    rawWorksheets = Array.isArray(data) ? data : (data.worksheets || data.Worksheets || data.value || []);
+    wsSel.innerHTML = rawWorksheets.map((w, i) => {
+      const name = w.worksheetName || w.WorksheetName || w.title || w.Title || w.name || w.Name || 'Sheet ' + i;
+      return `<option value="${i}">${name}</option>`;
+    }).join('');
+    if (rawWorksheets.length === 1) onWorksheetChange();
+  } catch (e) {
+    wsSel.innerHTML = '<option value="">Could not load worksheets</option>';
+  }
+}
+
+async function onWorksheetChange() {
+  const sheetId = document.getElementById('sheet-sel').value;
+  const wsIdx = document.getElementById('ws-sel').value;
+  const countBadge = document.getElementById('contact-count');
+  if (!sheetId || wsIdx === '') { countBadge.style.display = 'none'; return; }
+  const wsObj = rawWorksheets[parseInt(wsIdx)];
+  const realWsId = wsObj ? (wsObj.worksheetId || wsObj.WorksheetId || wsObj.gid || wsObj.id) : undefined;
+  countBadge.style.display = 'inline';
+  countBadge.textContent = 'Counting…';
+  try {
+    const ml = await api('/lists', 'POST', {
+      listSource: { listSourceSheet: {
+        spreadsheetId: sheetId,
+        worksheetId: String(realWsId)
+      }}
+    });
+    const listAddr = ml?.listAddress || ml?.ListAddress || '';
+    const countMatch = listAddr.match(/^(\d+)-/);
+    const count = ml?.totalEmailCount || ml?.TotalEmailCount || ml?.emailCount || ml?.EmailCount || (countMatch ? parseInt(countMatch[1]) : null);
+    if (count != null) {
+      countBadge.textContent = count.toLocaleString() + ' contacts';
+      countBadge.style.background = 'var(--success-bg)';
+      countBadge.style.color = 'var(--success-fg)';
+      countBadge.style.borderColor = 'transparent';
+    } else {
+      countBadge.style.display = 'none';
+    }
+  } catch (e) {
+    countBadge.style.display = 'none';
+  }
+}
+
+async function loadCampaigns() {
+  const el = document.getElementById('camp-list');
+  try {
+    const data = await api('/campaigns?limit=25');
+    const items = Array.isArray(data) ? data : (data.campaigns || []);
+    if (!items.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>No campaigns yet</div>';
+      return;
+    }
+    el.innerHTML = items.map(c => {
+      const s = c.status || 'Unknown';
+      const pc = s === 'sent' || s === 'Sent' ? 'pill-success' : s === 'scheduled' || s === 'Scheduled' ? 'pill-warn' : 'pill-info';
+      const sheet = c.lists?.[0]?.listSource?.listSourceSheet;
+      const sheetName = sheet ? (sheet.spreadsheetName || '') : '';
+      const wsName = sheet ? (sheet.worksheetName || '') : '';
+      const listLabel = sheetName ? (wsName && wsName !== sheetName ? sheetName + ' → ' + wsName : sheetName) : '';
+      const recipients = c.statistics?.recipients ?? c.totalEmailCount;
+      const recipientLabel = recipients != null ? recipients.toLocaleString() + ' sent' : '';
+      const rawDate = c.sentAtDisplay || c.scheduledForDisplay || c.creationTime || '';
+      const dateLabel = rawDate ? rawDate.slice(0, 10) : '';
+      const meta = [recipientLabel, listLabel, dateLabel].filter(Boolean).join(' · ');
+      const id = c.campaignId || c.id;
+      return `<div class="camp-item" onclick="viewDetail(${JSON.stringify(id)},${JSON.stringify(c.subject||'')},${JSON.stringify(s)},${JSON.stringify(pc)})">
+        <div style="flex:1;min-width:0">
+          <div class="camp-subject" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.subject || '(no subject)'}</div>
+          <div class="camp-meta" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${meta}</div>
+        </div>
+        <span class="pill ${pc}" style="flex-shrink:0">${s}</span>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Could not load campaigns</div>';
+  }
+}
+
+async function viewDetail(id, subject, status, pillCls) {
+  document.getElementById('detail-title').textContent = subject || 'Campaign';
+  const pill = document.getElementById('detail-pill');
+  pill.className = 'pill ' + pillCls;
+  pill.textContent = status;
+  document.getElementById('detail-content').innerHTML = '<div class="empty"><div style="display:flex;justify-content:center"><span class="spinner spinner-dark"></span></div></div>';
+  show('detail');
+  try {
+    const r = await api('/campaigns/' + id);
+    const fmt = v => v != null ? String(v) : '—';
+    const pct = v => v != null ? Math.round(v * 100) + '%' : '—';
+    const st = r.statistics || {};
+    const sheet2 = r.lists?.[0]?.listSource?.listSourceSheet;
+    const listInfo = sheet2 ? (sheet2.spreadsheetName || '') + (sheet2.worksheetName ? ' → ' + sheet2.worksheetName : '') : '—';
+    document.getElementById('detail-content').innerHTML = `
+      <p class="section-title">Stats</p>
+      <div class="stat-grid">
+        <div class="stat-card"><span class="stat-label">Sent</span><span class="stat-val">${fmt(st.recipients ?? r.totalEmailCount)}</span></div>
+        <div class="stat-card"><span class="stat-label">Opens</span><span class="stat-val">${fmt(st.opens ?? r.openCount)}</span></div>
+        <div class="stat-card"><span class="stat-label">Clicks</span><span class="stat-val">${fmt(st.clicks ?? r.clickCount)}</span></div>
+        <div class="stat-card"><span class="stat-label">Replies</span><span class="stat-val">${fmt(st.replies ?? r.replyCount)}</span></div>
+        <div class="stat-card"><span class="stat-label">Bounces</span><span class="stat-val">${fmt(st.bounces ?? r.bounceCount)}</span></div>
+        <div class="stat-card"><span class="stat-label">Unsubscribes</span><span class="stat-val">${fmt(st.unsubscribes ?? r.unsubscribeCount)}</span></div>
+      </div>
+      <div class="divider"></div>
+      <p class="section-title">Details</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;gap:12px"><span style="font-size:13px;color:var(--muted);flex-shrink:0">List</span><span style="font-size:13px;font-weight:500;text-align:right">${listInfo}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:12px"><span style="font-size:13px;color:var(--muted);flex-shrink:0">From</span><span style="font-size:13px;font-weight:500;text-align:right">${fmt(r.fromLine || r.fromEmail)}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:12px"><span style="font-size:13px;color:var(--muted);flex-shrink:0">Created</span><span style="font-size:13px;font-weight:500;text-align:right">${r.creationTime ? r.creationTime.slice(0,16).replace('T',' ') : '—'}</span></div>
+      </div>`;
+  } catch (e) {
+    document.getElementById('detail-content').innerHTML = '<div class="empty">Could not load campaign details</div>';
+  }
+}
+
+function setSched(mode) {
+  schedMode = mode;
+  document.getElementById('seg-now').classList.toggle('active', mode === 'now');
+  document.getElementById('seg-later').classList.toggle('active', mode === 'later');
+  document.getElementById('sched-panel').classList.toggle('show', mode === 'later');
+}
+
+async function sendCampaign() {
+  const subject = document.getElementById('subject').value.trim();
+  const body = document.getElementById('body').value.trim();
+  const sheetId = document.getElementById('sheet-sel').value;
+  const wsId = document.getElementById('ws-sel').value;
+  const errEl = document.getElementById('send-err');
+  const btn = document.getElementById('send-btn');
+  errEl.classList.remove('show');
+
+  if (!subject) { errEl.textContent = 'Please enter a subject line.'; errEl.classList.add('show'); return; }
+  if (!body)    { errEl.textContent = 'Please enter an email body.';  errEl.classList.add('show'); return; }
+  if (!sheetId) { errEl.textContent = 'Please select a Google Sheet.'; errEl.classList.add('show'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Sending…';
+
+  try {
+    const wsIndex = parseInt(wsId);
+    const wsObj = rawWorksheets[wsIndex];
+    const realWsId = wsObj ? (wsObj.worksheetId || wsObj.WorksheetId || wsObj.gid || wsObj.id) : undefined;
+    const ml = await api('/lists', 'POST', {
+      listSource: {
+        listSourceSheet: {
+          spreadsheetId: sheetId,
+          worksheetId: String(realWsId)
+        }
+      }
+    });
+    const listAddress = ml?.listAddress || ml?.ListAddress || ml?.emailAddress || ml?.EmailAddress || ml?.aliasAddress || ml?.AliasAddress;
+    if (!listAddress) throw new Error('No list address returned: ' + JSON.stringify(ml));
+    // Wrap in full HTML doc if body contains tags, to ensure HTML mode
+    const hasHtml = /<[a-z][\s\S]*>/i.test(body);
+    const message = hasHtml
+      ? `<!DOCTYPE html><html><body>${body}</body></html>`
+      : body;
+    const draft = await api('/campaigndrafts', 'POST', {
+      subject,
+      message,
+      messageType: hasHtml ? 'html' : 'plain',
+      listAddress
+    });
+    const draftId = draft?.campaignDraftId || draft?.draftId || draft?.DraftId || draft?.id;
+    if (!draftId) throw new Error('No draft ID returned: ' + JSON.stringify(draft));
+    const sendPayload = {};
+    if (schedMode === 'later') {
+      const d = document.getElementById('sched-date').value;
+      const t = document.getElementById('sched-time').value;
+      if (d && t) sendPayload.scheduledDate = d + 'T' + t + ':00';
+    }
+    await api('/campaigns/' + draftId, 'POST', sendPayload);
+
+    const isLater = schedMode === 'later';
+    document.getElementById('success-title').textContent = isLater ? 'Campaign scheduled!' : 'Campaign sent!';
+    document.getElementById('success-sub').textContent = isLater
+      ? `Scheduled for ${document.getElementById('sched-date').value} at ${document.getElementById('sched-time').value}`
+      : 'Your emails are on their way.';
+    show('success');
+    loadCampaigns();
+    document.getElementById('subject').value = '';
+    document.getElementById('body').value = '';
+  } catch (e) {
+    errEl.textContent = 'Something went wrong: ' + (e.message || 'unknown error');
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.52 60.52 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/></svg> Send campaign`;
+  }
+}
+
+function goHome()   { switchTab('new');    show('home'); }
+function goRecent() { switchTab('recent'); show('home'); }
+
+function signInGoogle() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/gmail.readonly',
+    callback: (resp) => {
+      if (resp.error) return;
+      googleToken = resp.access_token;
+      const btn = document.getElementById('google-signin-btn');
+      btn.innerHTML = '✓ Google connected';
+      btn.disabled = true;
+      document.getElementById('google-status').style.display = 'block';
+      document.getElementById('google-status').textContent = 'Gmail drafts will be available when composing';
+      localStorage.setItem('gmass_google_hint', 'connected');
+      document.getElementById('draft-field').style.display = 'flex';
+      loadDrafts();
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function loadDrafts() {
+  if (!googleToken) return;
+  const sel = document.getElementById('draft-sel');
+  sel.innerHTML = '<option value="">Loading drafts…</option>';
+  try {
+    const r = await fetch('https://www.googleapis.com/gmail/v1/users/me/drafts?maxResults=30', {
+      headers: { Authorization: 'Bearer ' + googleToken }
+    });
+    const data = await r.json();
+    rawDrafts = data.drafts || [];
+    // Fetch subject for each draft
+    const details = await Promise.all(rawDrafts.map(d =>
+      fetch(`https://www.googleapis.com/gmail/v1/users/me/drafts/${d.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=Content-Type`, {
+        headers: { Authorization: 'Bearer ' + googleToken }
+      }).then(r => r.json())
+    ));
+    rawDrafts = details;
+    sel.innerHTML = '<option value="">Select a draft…</option>' + details.map((d, i) => {
+      const subj = d.message?.payload?.headers?.find(h => h.name === 'Subject')?.value || '(no subject)';
+      return `<option value="${i}">${subj}</option>`;
+    }).join('');
+    document.getElementById('draft-field').style.display = 'flex';
+  } catch(e) {
+    sel.innerHTML = '<option value="">Could not load drafts</option>';
+  }
+}
+
+async function onDraftChange() {
+  const idx = document.getElementById('draft-sel').value;
+  if (idx === '') return;
+  const draft = rawDrafts[parseInt(idx)];
+  if (!draft) return;
+  // Set subject
+  const subj = draft.message?.payload?.headers?.find(h => h.name === 'Subject')?.value || '';
+  if (subj) document.getElementById('subject').value = subj;
+  // Fetch full draft body
+  try {
+    const r = await fetch(`https://www.googleapis.com/gmail/v1/users/me/drafts/${draft.id}?format=full`, {
+      headers: { Authorization: 'Bearer ' + googleToken }
+    });
+    const data = await r.json();
+    const parts = data.message?.payload?.parts || [data.message?.payload];
+    let body = '';
+    for (const part of parts) {
+      if (!part) continue;
+      if (part.mimeType === 'text/html' && part.body?.data) {
+        body = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+        break;
+      }
+      if (part.mimeType === 'text/plain' && part.body?.data) {
+        body = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+      }
+    }
+    if (body) document.getElementById('body').value = body;
+  } catch(e) {}
+}
+
+// Restore Google hint on load
+if (localStorage.getItem('gmass_google_hint')) {
+  document.getElementById('google-signin-btn').innerHTML = '✓ Re-connect Google (session expired)';
+}
+
+// Set today as min date for scheduler
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('sched-date').min = today;
+document.getElementById('sched-date').value = today;
+
+// Auto-connect if saved key exists
+const savedKey = localStorage.getItem('gmass_api_key');
+if (savedKey) {
+  document.getElementById('api-key-input').value = savedKey;
+  document.getElementById('remember-key').checked = true;
+  connectKey();
+}
+</script>
+</body>
+</html>
