@@ -336,7 +336,7 @@
       <p style="font-size:12px;color:var(--muted)">Key is only ever sent to GMass — never stored on any server.</p>
       <div style="width:100%;display:flex;align-items:center;gap:10px;margin-top:4px">
         <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:12px;color:var(--muted)">optional</span>
+        <span style="font-size:12px;color:var(--muted)">also required</span>
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <button class="btn btn-ghost" id="google-signin-btn" onclick="signInGoogle()" style="display:flex;align-items:center;gap:8px;width:100%">
@@ -381,9 +381,15 @@
       <div class="field">
         <label for="body" style="display:flex;justify-content:space-between;align-items:center">
           Email body
-          <span style="font-size:11px;color:var(--muted);font-weight:400">HTML supported</span>
+          <button onclick="showLinkBuilder()" style="background:none;border:none;font-size:12px;color:var(--info-fg);cursor:pointer;font-family:inherit;padding:0">+ insert link</button>
         </label>
-        <textarea id="body" placeholder="Write your message here, or select a Gmail draft above. HTML tags supported."></textarea>
+        <textarea id="body" placeholder="Write your message here. Use {{FirstName}} for personalisation."></textarea>
+        <div id="link-builder" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:none;flex-direction:column;gap:8px;margin-top:4px">
+          <p style="font-size:12px;font-weight:500;color:var(--muted)">Insert link</p>
+          <input type="text" id="link-text" placeholder="Link text e.g. Click here to take the survey" />
+          <input type="text" id="link-url" placeholder="URL e.g. https://survey.survation.com/..." />
+          <button class="btn btn-primary" style="padding:9px" onclick="insertLink()">Insert into body</button>
+        </div>
       </div>
       <div class="field">
         <label for="sheet-sel">Recipient list — Google Sheet</label>
@@ -754,18 +760,46 @@ async function sendCampaign() {
     });
     const listAddress = ml?.listAddress || ml?.ListAddress || ml?.emailAddress || ml?.EmailAddress || ml?.aliasAddress || ml?.AliasAddress;
     if (!listAddress) throw new Error('No list address returned: ' + JSON.stringify(ml));
-    // Wrap in full HTML doc if body contains tags, to ensure HTML mode
-    const hasHtml = /<[a-z][\s\S]*>/i.test(body);
-    const message = hasHtml
-      ? `<!DOCTYPE html><html><body>${body}</body></html>`
-      : body;
+    // Build HTML email body
+    const htmlBody = `<!DOCTYPE html><html><body>${body.replace(/\n/g, '<br>')}</body></html>`;
+
+    // Create Gmail draft with proper HTML MIME type
+    if (!googleToken) throw new Error('Please connect your Google account first — tap "Connect Google account" on the login screen.');
+    const emailLines = [
+      `To: ${listAddress}`,
+      `Subject: ${subject}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset=UTF-8',
+      '',
+      htmlBody
+    ].join('\r\n');
+    const encoded = btoa(unescape(encodeURIComponent(emailLines)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const gmailResp = await fetch('https://www.googleapis.com/gmail/v1/users/me/drafts', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + googleToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message: { raw: encoded } })
+    });
+    if (!gmailResp.ok) {
+      const e = await gmailResp.text();
+      throw new Error('Gmail draft creation failed: ' + e.slice(0, 200));
+    }
+    const gmailDraft = await gmailResp.json();
+    const gmailDraftId = gmailDraft.id;
+    if (!gmailDraftId) throw new Error('No Gmail draft ID returned');
+
+    // Pass Gmail draft ID to GMass
     const draft = await api('/campaigndrafts', 'POST', {
+      campaignDraftId: gmailDraftId,
       subject,
-      message,
-      messageType: hasHtml ? 'html' : 'plain',
+      message: htmlBody,
+      messageType: 'html',
       listAddress
     });
-    const draftId = draft?.campaignDraftId || draft?.draftId || draft?.DraftId || draft?.id;
+    const draftId = draft?.campaignDraftId || draft?.draftId || draft?.DraftId || draft?.id || gmailDraftId;
     if (!draftId) throw new Error('No draft ID returned: ' + JSON.stringify(draft));
     const sendPayload = {};
     if (schedMode === 'later') {
@@ -799,7 +833,7 @@ function goRecent() { switchTab('recent'); show('home'); }
 function signInGoogle() {
   const client = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/gmail.readonly',
+    scope: 'https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly',
     callback: (resp) => {
       if (resp.error) return;
       googleToken = resp.access_token;
@@ -871,6 +905,27 @@ async function onDraftChange() {
     }
     if (body) document.getElementById('body').value = body;
   } catch(e) {}
+}
+
+function showLinkBuilder() {
+  const lb = document.getElementById('link-builder');
+  lb.style.display = lb.style.display === 'none' ? 'flex' : 'none';
+}
+
+function insertLink() {
+  const text = document.getElementById('link-text').value.trim();
+  const url = document.getElementById('link-url').value.trim();
+  if (!text || !url) return;
+  const tag = `<a href="${url}">${text}</a>`;
+  const ta = document.getElementById('body');
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  ta.value = ta.value.slice(0, start) + tag + ta.value.slice(end);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + tag.length;
+  document.getElementById('link-builder').style.display = 'none';
+  document.getElementById('link-text').value = '';
+  document.getElementById('link-url').value = '';
 }
 
 // Restore Google hint on load
