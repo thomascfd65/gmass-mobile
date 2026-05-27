@@ -761,20 +761,37 @@ async function sendCampaign() {
     const listAddress = ml?.listAddress || ml?.ListAddress || ml?.emailAddress || ml?.EmailAddress || ml?.aliasAddress || ml?.AliasAddress;
     if (!listAddress) throw new Error('No list address returned: ' + JSON.stringify(ml));
     // Build HTML email body
-    const htmlBody = `<!DOCTYPE html><html><body>${body.replace(/\n/g, '<br>')}</body></html>`;
+    const htmlBody = body.replace(/\n/g, '<br>');
 
-    // Create Gmail draft with proper HTML MIME type
+    // Create Gmail draft with multipart MIME structure so HTML renders correctly
     if (!googleToken) throw new Error('Please connect your Google account first — tap "Connect Google account" on the login screen.');
-    const emailLines = [
+
+    const boundary = 'gmass_boundary_' + Math.random().toString(36).slice(2);
+    const mimeMsg = [
       `To: ${listAddress}`,
       `Subject: ${subject}`,
       'MIME-Version: 1.0',
-      'Content-Type: text/html; charset=UTF-8',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
       '',
-      htmlBody
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: quoted-printable',
+      '',
+      body,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: quoted-printable',
+      '',
+      `<html><body>${htmlBody}</body></html>`,
+      '',
+      `--${boundary}--`
     ].join('\r\n');
-    const encoded = btoa(unescape(encodeURIComponent(emailLines)))
+
+    // Base64url encode
+    const encoded = btoa(unescape(encodeURIComponent(mimeMsg)))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
     const gmailResp = await fetch('https://www.googleapis.com/gmail/v1/users/me/drafts', {
       method: 'POST',
       headers: {
