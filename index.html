@@ -390,7 +390,6 @@
           <input type="text" id="link-url" placeholder="URL e.g. https://survey.survation.com/..." />
           <button class="btn btn-primary" style="padding:9px" onclick="insertLink()">Insert into body</button>
         </div>
-        <div id="personalise-bar" style="display:none;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
       </div>
       <div class="field">
         <label for="sheet-sel">Recipient list — Google Sheet</label>
@@ -407,6 +406,7 @@
           <option value="">Select worksheet…</option>
         </select>
       </div>
+      <div id="personalise-bar" style="display:none;flex-wrap:wrap;gap:6px;padding:0 2px"></div>
       <div class="field">
         <label>When to send</label>
         <div class="seg">
@@ -1007,12 +1007,13 @@ const today = new Date().toISOString().split('T')[0];
 document.getElementById('sched-date').min = today;
 document.getElementById('sched-date').value = today;
 
-// Auto-connect if saved key exists
+// Auto-connect if saved key exists — wait for DOM to be fully ready
 const savedKey = localStorage.getItem('gmass_api_key');
 if (savedKey) {
   document.getElementById('api-key-input').value = savedKey;
   document.getElementById('remember-key').checked = true;
-  connectKey();
+  // Small delay to ensure any async scripts are settled before connecting
+  setTimeout(connectKey, 300);
 }
 </script>
 </body>
