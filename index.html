@@ -327,7 +327,7 @@
       <div class="key-form">
         <input type="password" id="api-key-input" placeholder="Paste API key here" autocomplete="off" />
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;font-weight:400">
-          <input type="checkbox" id="remember-key" style="width:auto;margin:0" />
+          <input type="checkbox" id="remember-key" style="width:auto;margin:0" onchange="toggleRemember()" />
           Remember on this device
         </label>
         <div class="alert alert-danger" id="key-err">Could not connect — check your API key and try again.</div>
@@ -535,6 +535,18 @@ async function api(path, method = 'GET', body = null) {
   return r.json();
 }
 
+function toggleRemember() {
+  const checked = document.getElementById('remember-key').checked;
+  const k = document.getElementById('api-key-input').value.trim();
+  try {
+    if (checked && k) {
+      localStorage.setItem('gmass_api_key', k);
+    } else {
+      localStorage.removeItem('gmass_api_key');
+    }
+  } catch(e) {}
+}
+
 async function connectKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key) return;
@@ -556,10 +568,9 @@ async function connectKey() {
         title: s.spreadsheetName || s.SpreadsheetName || s.spreadsheetTitle || s.SpreadsheetTitle || s.title || s.Title || s.name || s.Name || (titleEntry ? titleEntry[1] : null) || 'Sheet …' + (s.spreadsheetId || s.id || '').slice(-6)
       };
     });
+    // Save key regardless — checkbox controls whether it persists
     if (document.getElementById('remember-key').checked) {
-      localStorage.setItem('gmass_api_key', k);
-    } else {
-      localStorage.removeItem('gmass_api_key');
+      try { localStorage.setItem('gmass_api_key', k); } catch(e) {}
     }
     show('home');
     populateSheets();
