@@ -1033,6 +1033,9 @@ if (savedKey) {
       apiKey = '';
       if (autoConnectAttempts < 3) {
         setTimeout(autoConnect, 1000);
+      } else {
+        console.error('Auto-connect failed after 3 attempts:', e.message);
+        alert('Auto-connect failed: ' + e.message);
       }
       // Don't show error on auto-connect failure — just leave on key screen
     }
