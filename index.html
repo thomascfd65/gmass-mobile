@@ -1007,13 +1007,13 @@ const today = new Date().toISOString().split('T')[0];
 document.getElementById('sched-date').min = today;
 document.getElementById('sched-date').value = today;
 
-// Auto-connect if saved key exists — wait for DOM to be fully ready
+// Auto-connect if saved key exists
 const savedKey = localStorage.getItem('gmass_api_key');
 if (savedKey) {
   document.getElementById('api-key-input').value = savedKey;
   document.getElementById('remember-key').checked = true;
-  // Small delay to ensure any async scripts are settled before connecting
-  setTimeout(connectKey, 300);
+  // Wait for page to fully load before auto-connecting
+  window.addEventListener('load', () => setTimeout(connectKey, 200));
 }
 </script>
 </body>
