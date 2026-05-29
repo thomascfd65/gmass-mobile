@@ -1012,8 +1012,32 @@ const savedKey = localStorage.getItem('gmass_api_key');
 if (savedKey) {
   document.getElementById('api-key-input').value = savedKey;
   document.getElementById('remember-key').checked = true;
-  // Wait for page to fully load before auto-connecting
-  window.addEventListener('load', () => setTimeout(connectKey, 200));
+  // Retry connect up to 3 times in case of transient network issue on load
+  let autoConnectAttempts = 0;
+  async function autoConnect() {
+    autoConnectAttempts++;
+    const k = document.getElementById('api-key-input').value.trim();
+    if (!k) return;
+    apiKey = k;
+    try {
+      const data = await api('/sheets');
+      const rawSheets = Array.isArray(data) ? data : (data.sheets || data.Sheets || data.value || []);
+      sheets = (Array.isArray(rawSheets) ? rawSheets : []).map(s => ({
+        spreadsheetId: s.spreadsheetId || s.SpreadsheetId || s.id || '',
+        title: s.spreadsheetName || s.SpreadsheetName || s.title || s.Title || s.name || '(unnamed)'
+      }));
+      show('home');
+      populateSheets();
+      loadCampaigns();
+    } catch(e) {
+      apiKey = '';
+      if (autoConnectAttempts < 3) {
+        setTimeout(autoConnect, 1000);
+      }
+      // Don't show error on auto-connect failure — just leave on key screen
+    }
+  }
+  window.addEventListener('load', () => setTimeout(autoConnect, 500));
 }
 </script>
 </body>
