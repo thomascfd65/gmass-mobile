@@ -385,11 +385,13 @@
         </label>
         <textarea id="body" placeholder="Write your message here. Use {{FirstName}} for personalisation."></textarea>
         <div id="link-builder" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:none;flex-direction:column;gap:8px;margin-top:4px">
+        <div id="personalise-bar" style="display:none;flex-wrap:wrap;gap:6px;margin-top:4px"></div>
           <p style="font-size:12px;font-weight:500;color:var(--muted)">Insert link</p>
           <input type="text" id="link-text" placeholder="Link text e.g. Click here to take the survey" />
           <input type="text" id="link-url" placeholder="URL e.g. https://survey.survation.com/..." />
           <button class="btn btn-primary" style="padding:9px" onclick="insertLink()">Insert into body</button>
         </div>
+        <div id="personalise-bar" style="display:none;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
       </div>
       <div class="field">
         <label for="sheet-sel">Recipient list — Google Sheet</label>
@@ -650,6 +652,45 @@ async function onWorksheetChange() {
   } catch (e) {
     countBadge.style.display = 'none';
   }
+  loadSheetHeaders(sheetId, realWsId);
+
+async function loadSheetHeaders(sheetId, wsId) {
+  const bar = document.getElementById('personalise-bar');
+  bar.style.display = 'none';
+  bar.innerHTML = '';
+  if (!googleToken || !sheetId) return;
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:ZZ1?majorDimension=ROWS`;
+    const r = await fetch(url, { headers: { Authorization: 'Bearer ' + googleToken } });
+    const data = await r.json();
+    const headers = data.values?.[0] || [];
+    if (!headers.length) return;
+    bar.innerHTML = '';
+    bar.style.display = 'flex';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px;color:var(--muted);font-weight:500;width:100%;margin-bottom:2px';
+    lbl.textContent = 'Personalise — tap to insert:';
+    bar.appendChild(lbl);
+    headers.forEach(h => {
+      const tag = `{{${h}}}`;
+      const btn = document.createElement('button');
+      btn.textContent = h;
+      btn.style.cssText = 'font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-family:inherit;color:var(--text)';
+      btn.onclick = () => insertAtCursor('body', tag);
+      bar.appendChild(btn);
+    });
+  } catch(e) {}
+}
+
+function insertAtCursor(fieldId, text) {
+  const ta = document.getElementById(fieldId);
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + text.length;
+}
+
 }
 
 async function loadCampaigns() {
@@ -850,7 +891,7 @@ function goRecent() { switchTab('recent'); show('home'); }
 function signInGoogle() {
   const client = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
-    scope: 'https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly',
+    scope: 'https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/spreadsheets.readonly',
     callback: (resp) => {
       if (resp.error) return;
       googleToken = resp.access_token;
