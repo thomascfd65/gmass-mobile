@@ -1020,6 +1020,7 @@ document.getElementById('sched-date').min = today;
 document.getElementById('sched-date').value = today;
 
 // Auto-connect if saved key exists
+document.getElementById('key-err').classList.remove('show');
 const savedKey = getCookie('gmass_api_key');
 if (savedKey) {
   document.getElementById('api-key-input').value = savedKey;
@@ -1045,11 +1046,8 @@ if (savedKey) {
       apiKey = '';
       if (autoConnectAttempts < 3) {
         setTimeout(autoConnect, 1000);
-      } else {
-        console.error('Auto-connect failed after 3 attempts:', e.message);
-        alert('Auto-connect failed: ' + e.message);
       }
-      // Don't show error on auto-connect failure — just leave on key screen
+      // Fail silently — don't show error banner on auto-connect failure
     }
   }
   // If load already fired, run immediately; otherwise wait for it
