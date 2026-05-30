@@ -1032,38 +1032,23 @@ const savedKey = getCookie('gmass_api_key');
 if (savedKey) {
   document.getElementById('api-key-input').value = savedKey;
   document.getElementById('remember-key').checked = true;
-  // Retry connect up to 3 times in case of transient network issue on load
-  let autoConnectAttempts = 0;
+  // Use connectKey() directly but suppress the error banner
   async function autoConnect() {
-    autoConnectAttempts++;
-    const k = document.getElementById('api-key-input').value.trim();
-    console.log('Auto-connect attempt', autoConnectAttempts, 'key length:', k.length, 'BASE:', BASE);
-    if (!k) return;
-    apiKey = k;
-    try {
-      const data = await api('/sheets');
-      const rawSheets = Array.isArray(data) ? data : (data.sheets || data.Sheets || data.value || []);
-      sheets = (Array.isArray(rawSheets) ? rawSheets : []).map(s => ({
-        spreadsheetId: s.spreadsheetId || s.SpreadsheetId || s.id || '',
-        title: s.spreadsheetName || s.SpreadsheetName || s.title || s.Title || s.name || '(unnamed)'
-      }));
-      show('home');
-      populateSheets();
-      loadCampaigns();
-    } catch(e) {
-      apiKey = '';
-      if (autoConnectAttempts < 3) {
-        setTimeout(autoConnect, 1000);
-      }
-      console.log('Auto-connect error:', e.message);
-      // Fail silently — don't show error banner on auto-connect failure
+    const errEl = document.getElementById('key-err');
+    await connectKey();
+    // If connect failed (still on key screen), hide the error and retry once after 2s
+    if (document.getElementById('s-key').classList.contains('active')) {
+      errEl.classList.remove('show');
+      setTimeout(async () => {
+        await connectKey();
+        errEl.classList.remove('show');
+      }, 2000);
     }
   }
-  // If load already fired, run immediately; otherwise wait for it
   if (document.readyState === 'complete') {
-    setTimeout(autoConnect, 500);
+    setTimeout(autoConnect, 400);
   } else {
-    window.addEventListener('load', () => setTimeout(autoConnect, 500));
+    window.addEventListener('load', () => setTimeout(autoConnect, 400));
   }
 }
 </script>
