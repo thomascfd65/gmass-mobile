@@ -1017,39 +1017,11 @@ const today = new Date().toISOString().split('T')[0];
 document.getElementById('sched-date').min = today;
 document.getElementById('sched-date').value = today;
 
-// Auto-connect if saved key exists
-document.getElementById('key-err').classList.remove('show');
+// Pre-fill saved key so user just needs to tap Connect
 const savedKey = getCookie('gmass_api_key');
 if (savedKey) {
   document.getElementById('api-key-input').value = savedKey;
   document.getElementById('remember-key').checked = true;
-  async function autoConnect() {
-    document.getElementById('key-err').classList.remove('show');
-    document.getElementById('connect-btn').disabled = true;
-    document.getElementById('connect-btn').innerHTML = '<span class="spinner"></span> Connecting…';
-    try {
-      apiKey = savedKey;
-      const data = await api('/sheets');
-      const rawSheets = Array.isArray(data) ? data : (data.sheets || data.Sheets || data.value || []);
-      sheets = (Array.isArray(rawSheets) ? rawSheets : []).map(s => ({
-        spreadsheetId: s.spreadsheetId || s.SpreadsheetId || s.id || '',
-        title: s.spreadsheetName || s.SpreadsheetName || s.title || s.Title || s.name || '(unnamed)'
-      }));
-      show('home');
-      populateSheets();
-      loadCampaigns();
-    } catch(e) {
-      apiKey = '';
-      document.getElementById('connect-btn').disabled = false;
-      document.getElementById('connect-btn').innerHTML = 'Connect account';
-      // Fail silently — user can connect manually
-    }
-  }
-  if (document.readyState === 'complete') {
-    setTimeout(autoConnect, 600);
-  } else {
-    window.addEventListener('load', () => setTimeout(autoConnect, 600));
-  }
 }
 </script>
 </body>
