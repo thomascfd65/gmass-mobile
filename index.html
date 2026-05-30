@@ -1062,7 +1062,12 @@ if (savedKey) {
       // Don't show error on auto-connect failure — just leave on key screen
     }
   }
-  window.addEventListener('load', () => setTimeout(autoConnect, 500));
+  // If load already fired, run immediately; otherwise wait for it
+  if (document.readyState === 'complete') {
+    setTimeout(autoConnect, 500);
+  } else {
+    window.addEventListener('load', () => setTimeout(autoConnect, 500));
+  }
 }
 </script>
 </body>
