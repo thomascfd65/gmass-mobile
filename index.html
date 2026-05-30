@@ -1030,6 +1030,7 @@ if (savedKey) {
   async function autoConnect() {
     autoConnectAttempts++;
     const k = document.getElementById('api-key-input').value.trim();
+    console.log('Auto-connect attempt', autoConnectAttempts, 'key length:', k.length, 'BASE:', BASE);
     if (!k) return;
     apiKey = k;
     try {
