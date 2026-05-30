@@ -326,10 +326,7 @@
       </div>
       <div class="key-form">
         <input type="password" id="api-key-input" placeholder="Paste API key here" autocomplete="off" />
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;font-weight:400">
-          <input type="checkbox" id="remember-key" style="width:auto;margin:0" />
-          Remember on this device
-        </label>
+
         <div class="alert alert-danger" id="key-err">Could not connect — check your API key and try again.</div>
         <button class="btn btn-primary" id="connect-btn" onclick="connectKey()">Connect account</button>
       </div>
@@ -527,30 +524,6 @@ async function api(path, method = 'GET', body = null) {
   return r.json();
 }
 
-function setCookie(name, value, days) {
-  const d = new Date();
-  d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Strict';
-}
-function getCookie(name) {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? decodeURIComponent(match[2]) : null;
-}
-function deleteCookie(name) {
-  document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
-}
-
-function toggleRemember() {
-  const checked = document.getElementById('remember-key').checked;
-  const k = document.getElementById('api-key-input').value.trim();
-  if (checked && k) {
-    setCookie('gmass_api_key', k, 365);
-  } else if (!checked) {
-    deleteCookie('gmass_api_key');
-  }
-  // Don't delete cookie if unchecked but no key (e.g. during logout)
-}
-
 async function connectKey() {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key) return;
@@ -573,9 +546,6 @@ async function connectKey() {
       };
     });
     // Save key regardless — checkbox controls whether it persists
-    if (document.getElementById('remember-key').checked) {
-      setCookie('gmass_api_key', k, 365);
-    }
     show('home');
     populateSheets();
     loadCampaigns();
@@ -591,9 +561,7 @@ async function connectKey() {
 function logout() {
   apiKey = '';
   sheets = [];
-  deleteCookie('gmass_api_key');
   document.getElementById('api-key-input').value = '';
-  document.getElementById('remember-key').checked = false;
   show('key');
 }
 
@@ -1012,19 +980,11 @@ function insertLink() {
   document.getElementById('link-url').value = '';
 }
 
-
 // Set today as min date for scheduler
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('sched-date').min = today;
 document.getElementById('sched-date').value = today;
 
-// Pre-fill saved key so user just needs to tap Connect
-const savedKey = getCookie('gmass_api_key');
-if (savedKey && savedKey.length > 10) {
-  document.getElementById('api-key-input').value = savedKey;
-  document.getElementById('remember-key').checked = true;
-  document.getElementById('connect-btn').innerHTML = 'Connect account ✓';
-}
 </script>
 </body>
 </html>
