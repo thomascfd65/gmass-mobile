@@ -327,7 +327,7 @@
       <div class="key-form">
         <input type="password" id="api-key-input" placeholder="Paste API key here" autocomplete="off" />
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;font-weight:400">
-          <input type="checkbox" id="remember-key" style="width:auto;margin:0" onchange="toggleRemember()" />
+          <input type="checkbox" id="remember-key" style="width:auto;margin:0" />
           Remember on this device
         </label>
         <div class="alert alert-danger" id="key-err">Could not connect — check your API key and try again.</div>
@@ -545,9 +545,10 @@ function toggleRemember() {
   const k = document.getElementById('api-key-input').value.trim();
   if (checked && k) {
     setCookie('gmass_api_key', k, 365);
-  } else {
+  } else if (!checked) {
     deleteCookie('gmass_api_key');
   }
+  // Don't delete cookie if unchecked but no key (e.g. during logout)
 }
 
 async function connectKey() {
@@ -1019,9 +1020,10 @@ document.getElementById('sched-date').value = today;
 
 // Pre-fill saved key so user just needs to tap Connect
 const savedKey = getCookie('gmass_api_key');
-if (savedKey) {
+if (savedKey && savedKey.length > 10) {
   document.getElementById('api-key-input').value = savedKey;
   document.getElementById('remember-key').checked = true;
+  document.getElementById('connect-btn').innerHTML = 'Connect account ✓';
 }
 </script>
 </body>
